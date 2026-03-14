@@ -8,12 +8,12 @@
 |------|----------|
 | `Dockerfile` | Сборка образа: Ubuntu 22.04 + ROCm 7.0 + ядра gfx906 из 6.3 + llama.cpp |
 | `llamacpp_app.yaml` | Конфиг приложения для TrueNAS (Docker Compose) |
-| `cnf2.yml` | Альтернативный конфиг для TrueNAS с другими параметрами модели/батча |
+
 
 ## Требования
 
 - **GPU:** gfx906 (AMD Radeon VII, Instinct MI50).
-- **Хост:** Linux с поддержкой ROCm или TrueNAS Scale с AMD GPU.
+- **Хост:** TrueNAS Scale с AMD Radeon VII 16GB (vega 20).
 - Для контейнера нужен доступ к `/dev/dri` и `/dev/kfd`.
 
 ## Сборка образа
@@ -21,8 +21,6 @@
 ```bash
 docker build -t llama-rocm .
 ```
-
-Сборка занимает 15–30 минут (загрузка пакетов ROCm и компиляция llama.cpp).
 
 ## Готовый образ
 
@@ -57,7 +55,7 @@ docker run -d --rm \
 ## Развёртывание в TrueNAS
 
 1. В TrueNAS Scale: **Apps** → установить/настроить приложение по Docker Compose.
-2. В качестве манифеста использовать `llamacpp_app.yaml` или `cnf2.yml`.
+2. В качестве манифеста использовать `llamacpp_app.yaml`
 3. Обязательно:
    - указать образ `amstel8/llama-rocm:gfx906-rocm7`;
    - пробросить устройства `/dev/dri` и `/dev/kfd`;
