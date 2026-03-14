@@ -1,0 +1,113 @@
+services:
+  llamacpp:
+    command:
+      - '-m'
+      - >-
+        /models/L3.2-8X4B-MOE-V2-Dark-Champion-Inst-21B-uncen-ablit-D_AU-Q4_k_m.gguf
+      - '-ngl'
+      - '999'
+      - '-c'
+      - '8192'
+      - '--host'
+      - 0.0.0.0
+      - '--port'
+      - '8080'
+      - '--parallel'
+      - '4'
+    deploy:
+      resources:
+        limits:
+          cpus: '12'
+          memory: 25000M
+    devices:
+      - /dev/dri:/dev/dri
+      - /dev/kfd:/dev/kfd
+    environment:
+      HIP_VISIBLE_DEVICES: 0
+      HSA_OVERRIDE_GFX_VERSION: 9.0.6
+      GGML_HIP_FORCE_MMQ: 1
+      GGML_HIP_NO_VMM: 1
+      GGML_HIP_PINNED_MEM: 1
+      NVIDIA_VISIBLE_DEVICES: void
+      TZ: America/Los_Angeles
+    group_add:
+      - 44
+      - 107
+      - 568
+    image: amstel8/llama-rocm:gfx906-rocm7
+    platform: linux/amd64
+    ports:
+      - mode: ingress
+        protocol: tcp
+        published: 11434
+        target: 8080
+    privileged: False
+    pull_policy: missing
+    restart: 'no'
+    stdin_open: False
+    tty: False
+    volumes:
+      - bind:
+          create_host_path: False
+          propagation: rprivate
+        read_only: False
+        source: /mnt/bamboo/smb/ai
+        target: /models
+        type: bind
+volumes: {}
+x-notes: >
+  # iX App
+
+
+  ## Security
+
+
+  **Read the following security precautions to ensure that you wish to continue
+  using this application.**
+
+
+  ---
+
+
+  ### Container: [llamacpp]
+
+
+  #### Running user/group(s)
+
+
+  - User: unknown
+
+  - Group: unknown
+
+  - Supplementary Groups: apps
+
+
+  #### Security option [no-new-privileges] is not set
+
+
+  - Processes can gain additional privileges through setuid/setgid binaries
+
+  - Can potentially allow privilege escalation attacks within the container
+
+
+  #### Passing Host Files, Devices, or Sockets into the Container
+
+
+  - AMD GPU Device (/dev/kfd) - (Read/Write)
+
+  - DRI Device (/dev/dri) - (Read/Write)
+
+
+  ---
+
+
+
+
+  ## Bug Reports and Feature Requests
+
+
+  If you find a bug in this app or have an idea for a new feature, please file
+  an issue at
+
+  https://github.com/truenas/apps
+x-portals: []
