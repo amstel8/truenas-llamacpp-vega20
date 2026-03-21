@@ -1,5 +1,5 @@
-# ROCm 7.0 + gfx906 kernels from 6.3 (7.0 dropped gfx906 support)
-FROM rocm/dev-ubuntu-22.04:7.0
+# ROCm 7.2 + gfx906 kernels from 6.3 (6.4 dropped gfx906 support)
+FROM rocm/dev-ubuntu-22.04:7.2
 
 ENV DEBIAN_FRONTEND=noninteractive
 
@@ -19,7 +19,7 @@ ENV PATH=/opt/rocm/bin:$PATH
 ENV LD_LIBRARY_PATH=/opt/rocm/lib:/opt/rocm/lib64
 
 # -----------------------------
-# Extract gfx906 kernels from ROCm 6.3 rocblas (7.0 doesn't ship them)
+# Extract gfx906 kernels from ROCm 6.3 rocblas (6.4+ doesn't ship them)
 # -----------------------------
 WORKDIR /tmp
 
