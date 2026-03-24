@@ -3,6 +3,9 @@ FROM rocm/dev-ubuntu-22.04:7.2
 
 ENV DEBIAN_FRONTEND=noninteractive
 
+# -----------------------------
+# system + ROCm dev libs
+# -----------------------------
 RUN apt-get update && apt-get install -y \
     wget \
     git \
@@ -13,6 +16,9 @@ RUN apt-get update && apt-get install -y \
     hipblas \
     && rm -rf /var/lib/apt/lists/*
 
+# -----------------------------
+# ROCm env
+# -----------------------------
 ENV ROCM_PATH=/opt/rocm
 ENV HIP_PATH=/opt/rocm
 ENV PATH=/opt/rocm/bin:$PATH
@@ -31,14 +37,17 @@ RUN ROCBLAS_LIB="$(find rocblas63 -type d -name library -path '*rocblas*' | head
  && cp "$ROCBLAS_LIB"/*gfx906* /opt/rocm/lib/rocblas/library/
 
 # -----------------------------
-# build llama.cpp for gfx906
+# clone optimized repo
 # -----------------------------
 WORKDIR /opt
 
-RUN git clone https://github.com/ggerganov/llama.cpp.git
+RUN git clone https://github.com/iacopPBK/llama.cpp-gfx906.git
 
-WORKDIR /opt/llama.cpp
+WORKDIR /opt/llama.cpp-gfx906
 
+# -----------------------------
+# build (важно: hipcc + gfx906)
+# -----------------------------
 RUN cmake -B build -S . \
     -DGGML_HIP=ON \
     -DGGML_HIPBLAS=ON \
@@ -47,7 +56,7 @@ RUN cmake -B build -S . \
     -DCMAKE_PREFIX_PATH=/opt/rocm \
  && cmake --build build -j$(nproc)
 
-WORKDIR /opt/llama.cpp/build/bin
+WORKDIR /opt/llama.cpp-gfx906/build/bin
 
 EXPOSE 8080
 
