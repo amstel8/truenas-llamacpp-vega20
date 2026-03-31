@@ -1,0 +1,61 @@
+services:
+  llamacpp:
+    command:
+      - '-m'
+      - /models/Qwen3.5-35B-A3B-Uncensored-HauhauCS-Aggressive-IQ2_M.gguf
+      - '--mmproj'
+      - /models/mmproj-Qwen3.5-35B-A3B-Uncensored-HauhauCS-Aggressive-f16.gguf
+      - '-ngl'
+      - '99'
+      - '-c'
+      - '32384'
+      - '--host'
+      - 0.0.0.0
+      - '--port'
+      - '8080'
+      - '--penalty'
+      - '1.1'
+      - '--min-p'
+      - '0.1'
+    deploy:
+      resources:
+        limits:
+          cpus: '10'
+          memory: 36000M
+    devices:
+      - /dev/dri:/dev/dri
+      - /dev/kfd:/dev/kfd
+    environment:
+      GGML_HIP_FORCE_MMQ: 1
+      GGML_HIP_NO_VMM: 1
+      GGML_HIP_PINNED_MEM: 0
+      HIP_VISIBLE_DEVICES: 0
+      HSA_OVERRIDE_GFX_VERSION: 9.0.6
+      NVIDIA_VISIBLE_DEVICES: void
+      TZ: America/Los_Angeles
+    group_add:
+      - 44
+      - 107
+      - 568
+    image: amstel8/llama-rocm:gfx906-rocm72
+    platform: linux/amd64
+    ports:
+      - mode: ingress
+        protocol: tcp
+        published: 11434
+        target: 8080
+    privileged: False
+    pull_policy: missing
+    restart: 'no'
+    stdin_open: False
+    tty: False
+    volumes:
+      - bind:
+          create_host_path: False
+          propagation: rprivate
+        read_only: False
+        source: /mnt/bamboo/smb/ai
+        target: /models
+        type: bind
+volumes: {}
+x-portals: []

@@ -1,5 +1,5 @@
 # ROCm 7.2 + gfx906 kernels from 6.3 (6.4 dropped gfx906 support)
-FROM rocm/dev-ubuntu-22.04:7.2
+FROM rocm/dev-ubuntu-22.04:7.2.1
 
 ENV DEBIAN_FRONTEND=noninteractive
 
