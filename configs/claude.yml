@@ -1,20 +1,37 @@
 services:
-  llamacpp:
+  llama-claud:
+    image: amstel8/llama-rocm:gfx906-rocm721
+    platform: linux/amd64
     command:
       - '-m'
       - /models/Qwen3.5-35B-A3B-Uncensored-HauhauCS-Aggressive-IQ2_M.gguf
-      - '--mmproj'
-      - /models/mmproj-Qwen3.5-35B-A3B-Uncensored-HauhauCS-Aggressive-f16.gguf
-      - '-ngl'
-      - '99'
-      - '-c'
-      - '131072'
-      - '--repeat-penalty'
-      - '1.1'
       - '--host'
       - 0.0.0.0
       - '--port'
       - '8080'
+      - '-ngl'
+      - '99'
+      - '-t'
+      - '10'
+      - '-c'
+      - '131072'
+      - '-b'
+      - '512'
+      - '-ub'
+      - '1024'
+      - '--parallel'
+      - '1'
+      - '-fa'
+      - 'on'
+      - '--jinja'
+      - '--keep'
+      - '1024'
+      - '--swa-full'
+      - '--no-context-shift'
+      - '--chat-template-kwargs'
+      - '{"enable_thinking": false}'
+      - '--repeat-penalty'
+      - '1.1'
     deploy:
       resources:
         limits:
@@ -35,25 +52,8 @@ services:
       - 44
       - 107
       - 568
-    image: amstel8/llama-rocm:gfx906-rocm721
-    platform: linux/amd64
     ports:
-      - mode: ingress
-        protocol: tcp
-        published: 11434
-        target: 8080
-    privileged: False
-    pull_policy: missing
-    restart: 'no'
-    stdin_open: False
-    tty: False
+      - "11434:8080"
     volumes:
-      - bind:
-          create_host_path: False
-          propagation: rprivate
-        read_only: False
-        source: /mnt/bamboo/smb/ai
-        target: /models
-        type: bind
-volumes: {}
-x-portals: []
+      - /mnt/bamboo/smb/ai:/models
+    restart: unless-stopped
