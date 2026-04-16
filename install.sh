@@ -5,7 +5,7 @@ set -euo pipefail
 # install.sh — Claude Code + remote llama.cpp (auto-detect model)
 # ---------------------------------------------------------------------------
 
-BASE_URL="http://192.168.168.188:11434"
+BASE_URL="http://192.168.168.184:11434"
 
 ZSHRC="$HOME/.zshrc"
 CLAUDE_SETTINGS_DIR="$HOME/.claude"
