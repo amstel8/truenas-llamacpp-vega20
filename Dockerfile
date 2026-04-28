@@ -35,7 +35,9 @@ RUN ROCBLAS_LIB="$(find rocblas63 -type d -name library -path '*rocblas*' | head
 # -----------------------------
 WORKDIR /opt
 
-RUN git clone https://github.com/ggerganov/llama.cpp.git
+ARG LLAMA_CPP_CACHEBUST=1
+RUN echo "LLAMA_CPP_CACHEBUST=${LLAMA_CPP_CACHEBUST}" \
+ && git clone https://github.com/ggerganov/llama.cpp.git
 
 WORKDIR /opt/llama.cpp
 

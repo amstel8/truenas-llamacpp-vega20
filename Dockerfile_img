@@ -1,0 +1,131 @@
+# ROCm 7.2 + gfx906 kernels from ROCm 6.3 workaround for MI50/Radeon VII
+FROM rocm/dev-ubuntu-24.04:7.2.1
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+RUN apt-get update && apt-get install -y \
+    wget \
+    curl \
+    git \
+    git-lfs \
+    ffmpeg \
+    libgl1 \
+    libglib2.0-0 \
+    libsm6 \
+    libxext6 \
+    libxrender1 \
+    libnuma-dev \
+    dpkg-dev \
+    build-essential \
+    pkg-config \
+    cmake \
+    python3 \
+    python3-pip \
+    python3-venv \
+    python3-dev \
+    hipblas \
+    rocminfo \
+    && rm -rf /var/lib/apt/lists/*
+
+ENV ROCM_PATH=/opt/rocm
+ENV HIP_PATH=/opt/rocm
+ENV PATH=/opt/rocm/bin:/opt/venv/bin:$PATH
+ENV LD_LIBRARY_PATH=/opt/rocm/lib:/opt/rocm/lib64:/opt/rocm/lib/rocblas/library
+
+# -----------------------------
+# Extract gfx906 kernels from ROCm 6.3 rocBLAS
+# -----------------------------
+WORKDIR /tmp
+
+RUN wget -q https://repo.radeon.com/rocm/apt/6.3/pool/main/r/rocblas/rocblas_4.3.0.60300-39~22.04_amd64.deb -O rocblas63.deb \
+ && dpkg-deb -x rocblas63.deb rocblas63
+
+RUN ROCBLAS_LIB="$(find rocblas63 -type d -name library -path '*rocblas*' | head -1)" \
+ && mkdir -p /opt/rocm/lib/rocblas/library \
+ && cp "$ROCBLAS_LIB"/*gfx906* /opt/rocm/lib/rocblas/library/
+
+# -----------------------------
+# Python venv
+# -----------------------------
+RUN python3 -m venv /opt/venv \
+ && /opt/venv/bin/pip install --upgrade pip setuptools wheel
+
+# -----------------------------
+# PyTorch ROCm
+# -----------------------------
+RUN pip install --no-cache-dir \
+    torch \
+    torchvision \
+    torchaudio \
+    --index-url https://download.pytorch.org/whl/rocm7.2
+
+# Common deps used by ComfyUI/custom nodes
+RUN pip install --no-cache-dir \
+    ninja \
+    numpy \
+    pillow \
+    safetensors \
+    sentencepiece \
+    scipy \
+    pyyaml \
+    aiohttp \
+    psutil \
+    kornia \
+    einops \
+    transformers \
+    diffusers \
+    accelerate \
+    huggingface_hub \
+    opencv-python-headless \
+    imageio \
+    imageio-ffmpeg \
+    av
+
+# -----------------------------
+# ComfyUI
+# -----------------------------
+WORKDIR /opt
+RUN git clone https://github.com/comfyanonymous/ComfyUI.git
+
+WORKDIR /opt/ComfyUI
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Optional but useful:
+# ComfyUI Manager
+RUN git clone https://github.com/ltdrdata/ComfyUI-Manager custom_nodes/ComfyUI-Manager
+
+# Video-related nodes
+RUN git clone https://github.com/Kosinkadink/ComfyUI-AnimateDiff-Evolved custom_nodes/ComfyUI-AnimateDiff-Evolved \
+ && if [ -f custom_nodes/ComfyUI-AnimateDiff-Evolved/requirements.txt ]; then \
+      pip install --no-cache-dir -r custom_nodes/ComfyUI-AnimateDiff-Evolved/requirements.txt; \
+    fi
+
+# Optional: VideoHelperSuite for loading/saving video
+RUN git clone https://github.com/Kosinkadink/ComfyUI-VideoHelperSuite custom_nodes/ComfyUI-VideoHelperSuite \
+ && if [ -f custom_nodes/ComfyUI-VideoHelperSuite/requirements.txt ]; then \
+      pip install --no-cache-dir -r custom_nodes/ComfyUI-VideoHelperSuite/requirements.txt; \
+    fi
+
+# Optional: llama-cpp-python for nodes that need it
+ENV LLAMA_CPP_PYTHON_VERSION=0.3.16
+ENV CMAKE_ARGS="-DGGML_HIP=ON -DCMAKE_C_COMPILER=/opt/rocm/llvm/bin/clang -DCMAKE_CXX_COMPILER=/opt/rocm/llvm/bin/clang++ -DAMDGPU_TARGETS=gfx906"
+RUN pip install --no-cache-dir "llama-cpp-python==${LLAMA_CPP_PYTHON_VERSION}" || true
+
+# -----------------------------
+# Runtime env for MI50 / Radeon VII
+# -----------------------------
+ENV HSA_OVERRIDE_GFX_VERSION=9.0.6
+ENV HSA_ENABLE_SDMA=0
+ENV HIP_VISIBLE_DEVICES=0,1
+ENV TORCH_BLAS_PREFER_HIPBLASLT=0
+ENV PYTORCH_HIP_ALLOC_CONF=expandable_segments:True
+ENV COMFYUI_LAUNCH_ARGS="--listen 0.0.0.0 --port 8188"
+
+# Model / output persistence
+VOLUME ["/opt/ComfyUI/models", "/opt/ComfyUI/input", "/opt/ComfyUI/output", "/opt/ComfyUI/user"]
+
+EXPOSE 8188
+
+WORKDIR /opt/ComfyUI
+
+CMD ["sh", "-c", "python main.py $COMFYUI_LAUNCH_ARGS"]
